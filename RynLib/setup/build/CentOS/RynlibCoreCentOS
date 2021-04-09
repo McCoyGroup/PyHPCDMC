@@ -1,0 +1,79 @@
+#
+#   CORE:
+#       Defines how to build the core that RynLib will require inside the Dockerized environment
+#       This version of the core builds off of a CentOS backend, which is what we need to run on Hyak
+#
+FROM nvidia/cuda:10.1-devel-centos7
+
+# Python
+RUN \
+    yum install -y \
+        python2 \
+        python3 \
+        wget &&\
+    rm -rf /var/cache/yum/*
+
+# GNU compiler runtime
+RUN \
+    yum install -y \
+        libgfortran \
+        libgomp &&\
+    rm -rf /var/cache/yum/*
+
+# Centos Development Tools
+RUN \
+    yum groupinstall -y 'Development Tools'
+
+# OPA
+RUN \
+    yum install -y \
+        hwloc-libs \
+        infinipath-psm \
+        libfabric \
+        libhfil \
+        libibverbs \
+        libibverbs-devel \
+        libpsm2 \
+        libsysfs-devel \
+        numactl-libs \
+        opa-basic-tools \
+        rdma-core
+
+# OpenMPI
+RUN \
+    yum install -y \
+        hwloc \
+        openssh-clients &&\
+    rm -rf /var/cache/yum/*
+
+# Intel Components (really want TBB, but the other stuff is coming along for the ride)
+# https://software.intel.com/content/www/us/en/develop/articles/installing-intel-free-libs-and-python-yum-repo.html
+ARG ITR=2020.0-088
+ARG IRS=2020.0.088
+RUN \
+  yum-config-manager --add-repo https://yum.repos.intel.com/mkl/setup/intel-mkl.repo &&\
+  yum-config-manager --add-repo https://yum.repos.intel.com/tbb/setup/intel-tbb.repo &&\
+  rpm --import https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB
+RUN \
+  yum install -y intel-mkl-$ITR &&\
+  yum install -y intel-tbb-$ITR &&\
+  rm -rf /var/cache/yum/*
+
+
+ENV BASH_ENV=/etc/bash.bashrc
+ENV MKL_THREADING_LAYER=TBB
+
+# RynLib
+RUN \
+ yum install -y\
+    g++\
+    git && \
+  rm -rf /var/cache/yum/*  &&\
+ yum install -y\
+    python3-devel\
+    python3-pip\
+    gcc-gfortran  &&\
+  pip3 install numpy &&\
+  pip3 install scipy &&\
+  pip3 install wget &&\
+  pip3 install memory_profiler matplotlib
